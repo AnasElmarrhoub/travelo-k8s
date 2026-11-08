@@ -1,0 +1,70 @@
+services:
+  # ------------------------------------------------
+  # Service 1 : Base de données MySQL
+  # ------------------------------------------------
+  database:
+    container_name: travelo-database
+    image: mysql:8.0
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-chaima2003}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-travelo_db}
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - travelo-net
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-chaima2003}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ------------------------------------------------
+  # Service 2 : Backend Spring Boot
+  # ------------------------------------------------
+  backend:
+    container_name: travelo-backend
+    build:
+      context: ./travelo_backend
+      dockerfile: Dockerfile
+    image: localhost:5000/travelo-backend:1.0 
+    restart: always
+    ports:
+      - "8080:8080"
+    depends_on:
+      database:
+        condition: service_healthy
+    networks:
+      - travelo-net
+
+  # ------------------------------------------------
+  # Service 3 : Frontend React (servi par Nginx)
+  # ------------------------------------------------
+  frontend:
+    container_name: travelo-frontend
+    build:
+      context: ./travelo_frontend
+      dockerfile: Dockerfile
+    image: localhost:5000/travelo-frontend:1.0
+    restart: always
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    networks:
+      - travelo-net
+
+# --------------------------------------------------
+# Réseau partagé personnalisé
+# --------------------------------------------------
+networks:
+  travelo-net:
+    driver: bridge
+
+# --------------------------------------------------
+# Volume persistant pour les données MySQL
+# --------------------------------------------------
+volumes:
+  mysql_data:

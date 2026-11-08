@@ -1,0 +1,33 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: travelo-admin-sa
+  namespace: travelo
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: travelo-manager-role
+  namespace: travelo
+rules:
+  - apiGroups: ["", "apps", "batch"]
+    resources: ["pods", "services", "deployments", "statefulsets", "configmaps", "secrets"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups: ["networking.k8s.io"]
+    resources: ["ingresses"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: travelo-manager-binding
+  namespace: travelo
+subjects:
+  - kind: ServiceAccount
+    name: travelo-admin-sa
+    namespace: travelo
+roleRef:
+  kind: Role
+  name: travelo-manager-role
+  apiGroup: rbac.authorization.k8s.io
+

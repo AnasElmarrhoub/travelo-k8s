@@ -1,0 +1,1526 @@
+% Rapport de Projet - Devoir 1 : Conteneurisation d'une Application Web (Travelo)
+% Auteur : Anas EL-MARRHOUB
+% Etablissement : Institut National des Postes et Telecommunications (INPT)
+% Filiere : ASEDS - INE2
+% Module : Conteneurisation des Applications
+% Enseignant : Prof. Driss ALLAKI
+% Annee Universitaire : 2026/2027
+
+\documentclass[11pt,a4paper]{article}
+
+% --- PACKAGES STANDARDS & GRAPHISMES ---
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[french]{babel}
+\usepackage{geometry}
+\geometry{top=2.2cm, bottom=2.2cm, left=2.2cm, right=2.2cm}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{subcaption}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{tabularx}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{listings}
+\usepackage{fancyhdr}
+\usepackage{titlesec}
+\usepackage[most]{tcolorbox}
+\usepackage{microtype}
+
+% --- PALETTE DE COULEURS PROFESSIONNELLE ---
+\definecolor{inptblue}{RGB}{12, 59, 102}
+\definecolor{dockerblue}{RGB}{29, 99, 237}
+\definecolor{darkgray}{RGB}{40, 44, 52}
+\definecolor{codebg}{RGB}{247, 249, 252}
+\definecolor{codeborder}{RGB}{218, 224, 233}
+\definecolor{keywordcolor}{RGB}{0, 102, 204}
+\definecolor{stringcolor}{RGB}{180, 75, 0}
+\definecolor{commentcolor}{RGB}{108, 117, 125}
+
+% --- DEFINITION PROPRE DES LANGAGES DOCKER ET YAML POUR LISTINGS ---
+\lstdefinelanguage{docker}{
+  keywords={FROM, RUN, COPY, ADD, ENTRYPOINT, CMD, ENV, ARG, WORKDIR, EXPOSE, USER, VOLUME, STOPSIGNAL, ONBUILD, HEALTHCHECK, SHELL, AS},
+  keywordstyle=\color{keywordcolor}\bfseries,
+  sensitive=true,
+  comment=[l]{\#},
+  commentstyle=\color{commentcolor}\itshape,
+  string=[b]",
+  stringstyle=\color{stringcolor}
+}
+
+\lstdefinelanguage{yaml}{
+  keywords={services, networks, volumes, image, build, context, dockerfile, restart, ports, environment, depends_on, condition, healthcheck, deploy, mode, replicas, resources, limits, cpus, memory, restart_policy, delay, max_attempts, window, placement, constraints, configs, driver, attachable, proxy_pass, target, published},
+  keywordstyle=\color{keywordcolor}\bfseries,
+  basicstyle=\ttfamily\footnotesize\color{darkgray},
+  sensitive=false,
+  comment=[l]{\#},
+  commentstyle=\color{commentcolor}\itshape,
+  string=[b]",
+  stringstyle=\color{stringcolor},
+  moredelim=[s][\color{stringcolor}]{'}{'}
+}
+
+\lstset{
+  backgroundcolor=\color{codebg},
+  basicstyle=\ttfamily\footnotesize\color{darkgray},
+  keywordstyle=\color{dockerblue}\bfseries,
+  commentstyle=\color{commentcolor}\itshape,
+  stringstyle=\color{stringcolor},
+  breaklines=true,
+  breakatwhitespace=false,
+  frame=single,
+  rulecolor=\color{codeborder},
+  numbers=left,
+  numberstyle=\tiny\color{gray},
+  stepnumber=1,
+  numbersep=7pt,
+  tabsize=2,
+  showspaces=false,
+  showstringspaces=false,
+  captionpos=b,
+  inputencoding=utf8,
+  extendedchars=true,
+  literate={é}{{\'e}}1 {è}{{\`e}}1 {à}{{\`a}}1 {ç}{{\c{c}}}1 {ê}{{\^e}}1 {î}{{\^i}}1 {ô}{{\^o}}1 {ù}{{\`u}}1 {’}{{'}}1
+}
+
+% --- MACRO DE SECURITE POUR L'INCLUSION DES CAPTURES D'ECRAN ---
+\newcommand{\shot}[2][\linewidth]{%
+  \IfFileExists{#2}%
+    {\includegraphics[width=#1]{#2}}%
+    {\fbox{\parbox{#1}{\centering\color{red}\small Capture introuvable :\\\texttt{\detokenize{#2}}}}}%
+}
+
+% --- CONFIGURATION HYPERREF RESTAUREE ---
+\hypersetup{
+    colorlinks=true,
+    linkcolor=inptblue,
+    filecolor=dockerblue,
+    urlcolor=dockerblue,
+    citecolor=inptblue,
+    pdftitle={Devoir 1 : Conteneurisation d'une Application Web (Travelo)},
+    pdfauthor={Anas EL-MARRHOUB}
+}
+
+% --- EN-TETES ET PIEDS DE PAGE ---
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small\color{gray}\textbf{Conteneurisation des Applications}}
+\fancyhead[R]{\small\color{gray}Devoir 1}
+\fancyfoot[R]{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\footrulewidth}{0.4pt}
+
+% --- BOITES STYLISEES PEDAGOGIQUES ---
+\newtcolorbox{justificationbox}[1][]{
+  enhanced,
+  colback=blue!2!white,
+  colframe=dockerblue,
+  fonttitle=\bfseries\color{white},
+  title=Justification Technique \& Architecturale,
+  arc=2.5mm,
+  boxrule=0.8pt,
+  #1
+}
+
+\newtcolorbox{notebox}[1][]{
+  enhanced,
+  colback=orange!3!white,
+  colframe=orange!80!black,
+  fonttitle=\bfseries\color{white},
+  title=Point d'Attention Méthodologique,
+  arc=2.5mm,
+  boxrule=0.8pt,
+  #1
+}
+
+\begin{document}
+
+% ==============================================================================
+% PAGE DE GARDE CONFORME A L'ENONCE
+% ==============================================================================
+\begin{titlepage}
+  \centering
+  {\scshape\LARGE Institut National des Postes et Télécommunications \par}
+  \vspace{0.4cm}
+  {\scshape\large Conteneurisation des Applications -- ASEDS \par}
+  \vspace{0.2cm}
+  {\large Année Universitaire 2026/2027 \par}
+  \vspace{1.8cm}
+  
+  \begin{tcolorbox}[colback=inptblue, colframe=inptblue, arc=4mm, halign=center]
+    \color{white}
+    \vspace{0.5cm}
+    {\Huge\bfseries Devoir 1 \par}
+    \vspace{0.4cm}
+    {\Large\bfseries Conteneurisation d'une Application Web (\textit{Travelo}) \par}
+    \vspace{0.3cm}
+    {\large Évaluation de faisabilité (Proof of Concept) pour l'entreprise \textit{NeoTech} \par}
+    \vspace{0.5cm}
+  \end{tcolorbox}
+  
+  \vspace{2.5cm}
+  
+  \begin{minipage}{0.48\textwidth}
+    \begin{flushleft} \large
+      \textbf{Réalisé par :}\\
+      Anas \textsc{EL-MARRHOUB}
+    \end{flushleft}
+  \end{minipage}
+  \hfill
+  \begin{minipage}{0.48\textwidth}
+    \begin{flushright} \large
+      \textbf{Encadré par :}\\
+      Prof. Driss \textsc{ALLAKI}
+    \end{flushright}
+  \end{minipage}
+  
+  \vfill
+  
+  \begin{tcolorbox}[colback=gray!10!white, colframe=gray!40!white, arc=2mm, halign=center]
+    \small \textbf{Technologies mises en œuvre :} Docker Engine v29, Docker Compose v5, Docker Hub, Local Registry v2, Docker Swarm (Overlay Network, Routing Mesh, Replicas, VIP), Nginx Reverse Proxy, Spring Boot 3, React, MySQL 8.0.
+  \end{tcolorbox}
+  
+  \vspace{0.5cm}
+\end{titlepage}
+
+\newpage
+\tableofcontents
+\newpage
+
+% ==============================================================================
+% SECTION 1 : INTRODUCTION ET CONTEXTE
+% ==============================================================================
+\section{Introduction et Contexte du Projet}
+
+\subsection{Contexte de l'entreprise NeoTech}
+NeoTech est une jeune entreprise de développement de solutions et de services logiciels de haute qualité. Cependant, l'équipe technique fait face à des problèmes d'incompatibilité d'environnements et de non-portabilité des applications entre les phases de développement, de test et de mise en production. Ces décalages provoquent des retards de déploiement, des anomalies imprévues en production et ralentissent considérablement la fréquence de livraison logicielle.
+
+Face à ces défis, NeoTech souhaite standardiser ses environnements d'exécution, éliminer les disparités inter-plateformes et augmenter la productivité globale via l'approche de la conteneurisation. Un PoC (Proof of Concept) a été confié pour évaluer l'efficacité de Docker et Docker Swarm.
+
+\subsection{Architecture 3-tiers de l'application Travelo}
+L'application Travelo est un système de réservation de vols aériens structuré selon un modèle 3-tiers découplé :
+\begin{itemize}
+  \item \textbf{Frontend (React) :} Interface monopage permettant la recherche de vols par critères (villes de départ et d'arrivée, dates, aller simple ou retour) et la réservation de sièges.
+  \item \textbf{Backend (Spring Boot 3.4) :} API RESTful assurant la logique de gestion des vols, des passagers et des réservations, interfacée via Spring Data JPA / Hibernate.
+  \item \textbf{Base de données (MySQL 8.0) :} SGBD relationnel assurant le stockage persistant dans le schéma \texttt{travelo\_db}.
+\end{itemize}
+
+\subsection{Clonage du code source et vérification des outils}
+Le code source est récupéré depuis le dépôt Git fourni dans l'énoncé du projet.
+
+\begin{lstlisting}[language=bash]
+git clone https://github.com/dall49/travelo-app.git
+cd travelo-app
+docker --version && docker compose version
+\end{lstlisting}
+
+\subsubsection*{Attributs et commandes}
+\begin{itemize}
+  \item \texttt{git clone} : Copie le référentiel complet en local dans le répertoire \texttt{travelo-app}.
+  \item \texttt{docker --version} : Confirme la présence du moteur Docker (\textbf{v29.4.1}).
+  \item \texttt{docker compose version} : Vérifie le composant Docker Compose (\textbf{v5.1.3}).
+\end{itemize}
+
+\begin{figure}[H]
+  \centering
+  \shot[0.85\linewidth]{photo rapport/1/1.png}
+  \caption{Clonage du projet Travelo depuis le dépôt GitHub officiel}
+  \label{fig:git-clone}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \shot[0.82\linewidth]{photo rapport/1/2.png}
+  \caption{Validation des versions Docker et Docker Compose installées}
+  \label{fig:docker-version}
+\end{figure}
+
+% ==============================================================================
+% SECTION 2 : VOLET 1 - CONTENEURISATION DE L'APPLICATION AVEC DOCKER
+% ==============================================================================
+\section{Volet 1 : Conteneurisation de l'Application avec Docker}
+
+\subsection{Q1. Création du réseau Docker}
+Pour interconnecter les trois tiers tout en les isolant du système hôte, un réseau bridge personnalisé est créé.
+
+\begin{lstlisting}[language=bash]
+docker network create --driver bridge travelo-net
+docker network inspect travelo-net
+\end{lstlisting}
+
+\subsubsection*{Explication systématique des attributs CLI}
+\begin{itemize}
+  \item \texttt{network create} : Commande de création d'une entité réseau gérée par le démon Docker.
+  \item \texttt{--driver bridge} : Spécifie le pilote de commutation réseau virtuel logiciel de niveau 2 sur l'hôte.
+  \item \texttt{travelo-net} : Identifiant textuel unique assigné au réseau.
+  \item \texttt{network inspect} : Retourne la configuration complète (sous-réseau, passerelle, conteneurs connectés) en syntaxe JSON.
+\end{itemize}
+
+\begin{justificationbox}
+\textbf{Pourquoi un réseau bridge défini par l'utilisateur plutôt que le bridge par défaut ?}
+\begin{enumerate}
+  \item \textbf{Résolution DNS automatique par nom de conteneur :} Sur un pont personnalisé, Docker active un résolveur DNS interne. Le conteneur backend peut joindre la base via l'alias \texttt{travelo-database} sans dépendre d'adresses IP dynamiques. Le bridge par défaut n'offre aucune résolution DNS automatique par nom de conteneur.
+  \item \textbf{Isolation réseau supérieure :} Seuls les conteneurs explicitement rattachés à ce réseau peuvent dialoguer, évitant les accès indésirables d'autres conteneurs s'exécutant sur l'hôte.
+  \item \textbf{Gestion à chaud :} Les conteneurs peuvent être connectés ou déconnectés d'un réseau utilisateur sans interruption de service.
+\end{enumerate}
+\end{justificationbox}
+
+\begin{figure}[H]
+  \centering
+  \begin{subfigure}[b]{0.48\textwidth}
+    \shot[\linewidth]{photo rapport/1/3.png}
+    \caption{Création du réseau \texttt{travelo-net}}
+    \label{fig:net-create}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}[b]{0.48\textwidth}
+    \shot[\linewidth]{photo rapport/1/4.png}
+    \caption{Inspection IPAM (\texttt{172.22.0.0/16})}
+    \label{fig:net-inspect}
+  \end{subfigure}
+  \caption{Mise en place et vérification du réseau personnalisé \texttt{travelo-net}}
+  \label{fig:reseau-q1}
+\end{figure}
+
+% ------------------------------------------------------------------------------
+\subsection{Q2. Conteneurisation de la Base de Données MySQL}
+
+\subsubsection{a. Persistance des données et comparaison des types de stockage}
+\begin{table}[H]
+\centering
+\small
+\begin{tabularx}{\textwidth}{l p{4cm} p{4cm} p{3.8cm}}
+\toprule
+\textbf{Solution} & \textbf{Mécanisme technique} & \textbf{Avantages majeurs} & \textbf{Inconvénients} \\
+\midrule
+\textbf{Docker Named Volume} & Géré exclusivement par Docker dans \texttt{/var/lib/docker/volumes/} & Totalement portable, indépendant de l'hôte, haute performance I/O, sécurisé & Non directement explorable sans droits d'administration \\
+\textbf{Bind Mount} & Montage direct d'un dossier hôte arbitraire dans le conteneur & Pratique en phase de dev pour éditer du code source & Dépend de l'OS hôte, risques de conflits de droits (UID/GID), latence WSL2 \\
+\textbf{tmpfs Mount} & Montage éphémère en mémoire vive (RAM) uniquement & Vitesse I/O maximale, sécurité (aucune trace disque) & Aucune persistance (perte totale des données à l'extinction) \\
+\bottomrule
+\end{tabularx}
+\caption{Comparatif des mécanismes de stockage sous Docker}
+\label{tab:stockage}
+\end{table}
+
+\begin{justificationbox}
+Pour un SGBD relationnel en production, le \textbf{Volume nommé Docker} (\texttt{mysql-data}) est le choix le plus adéquat. Il isole le cycle de vie des données de celui du conteneur, évite les problèmes de droits et de performances liés au système de fichiers Windows/WSL2 lors des bind mounts, et garantit la portabilité.
+\end{justificationbox}
+
+\begin{lstlisting}[language=bash]
+docker volume create mysql-data
+\end{lstlisting}
+\begin{itemize}
+  \item \texttt{volume create} : Alloue un volume persistant managé par Docker.
+  \item \texttt{mysql-data} : Nom de référence du volume pour les données MySQL.
+\end{itemize}
+
+\begin{figure}[H]
+  \centering
+  \shot[0.75\linewidth]{photo rapport/2/1.png}
+  \caption{Création du volume nommé \texttt{mysql-data}}
+  \label{fig:vol-create}
+\end{figure}
+
+\subsubsection{b. Instanciation du conteneur MySQL et connexion au réseau}
+\begin{lstlisting}[language=bash]
+docker run -d --name travelo-database \
+  --network travelo-net \
+  -e MYSQL_ROOT_PASSWORD=chaima2003 \
+  -e MYSQL_DATABASE=travelo_db \
+  -v mysql-data:/var/lib/mysql \
+  --restart unless-stopped \
+  mysql:8.0
+\end{lstlisting}
+
+\subsubsection*{Explication systématique des attributs CLI}
+\begin{itemize}
+  \item \texttt{-d} (\textit{detach}) : Exécute le conteneur en arrière-plan.
+  \item \texttt{--name travelo-database} : Attribue un nom réseau univoque au conteneur pour la résolution DNS.
+  \item \texttt{--network travelo-net} : Attache le conteneur au réseau bridge créé en Q1.
+  \item \texttt{-e MYSQL\_ROOT\_PASSWORD=chaima2003} : Définit le mot de passe du compte administrateur \texttt{root}.
+  \item \texttt{-e MYSQL\_DATABASE=travelo\_db} : Crée automatiquement la base de données applicative au démarrage.
+  \item \texttt{-v mysql-data:/var/lib/mysql} : Monte le volume persistant sur le répertoire de données InnoDB.
+  \item \texttt{--restart unless-stopped} : Redémarre automatiquement le conteneur en cas d'incident, sauf arrêt explicite.
+  \item \texttt{mysql:8.0} : Image officielle du SGBD MySQL (version 8.0).
+\end{itemize}
+
+\begin{figure}[H]
+  \centering
+  \shot[0.85\linewidth]{photo rapport/2/2.png}
+  \caption{Téléchargement de l'image et instanciation du conteneur MySQL}
+  \label{fig:mysql-run}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \shot[0.85\linewidth]{photo rapport/2/3.png}
+  \caption{Conteneur \texttt{travelo-database} actif dans \texttt{docker ps}}
+  \label{fig:mysql-ps}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \shot[0.8\linewidth]{photo rapport/2/4.png}
+  \caption{Vérification de la présence de la base \texttt{travelo\_db} via requête SQL}
+  \label{fig:mysql-databases}
+\end{figure}
+
+\subsubsection{Preuve expérimentale de la persistance et attachement réseau}
+Pour valider expérimentalement la persistance, une table \texttt{test} avec une valeur est insérée. Le conteneur est ensuite supprimé de force avec \texttt{docker rm -f}, puis recréé en réutilisant le volume \texttt{mysql-data}. La requête de sélection confirme la restitution intégrale des données.
+
+\begin{figure}[H]
+  \centering
+  \begin{subfigure}[b]{0.48\textwidth}
+    \shot[\linewidth]{photo rapport/2/5.png}
+    \caption{Insertion d'une ligne de test}
+    \label{fig:test-insert}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}[b]{0.48\textwidth}
+    \shot[\linewidth]{photo rapport/2/6.png}
+    \caption{Suppression forcée du conteneur}
+    \label{fig:rm-force}
+  \end{subfigure}
+  \vfill
+  \begin{subfigure}[b]{0.48\textwidth}
+    \shot[\linewidth]{photo rapport/2/7.png}
+    \caption{Donnée conservée après réinstanciation}
+    \label{fig:test-select}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}[b]{0.48\textwidth}
+    \shot[\linewidth]{photo rapport/2/8.png}
+    \caption{Présence de la base dans \texttt{travelo-net}}
+    \label{fig:net-inspect-db}
+  \end{subfigure}
+  \caption{Preuves de persistance du volume et d'attachement au réseau}
+  \label{fig:mysql-persistence-group}
+\end{figure}
+
+% ------------------------------------------------------------------------------
+\subsection{Q3 \& Q4. Dockerfile du Projet Backend (Spring Boot) et Bonnes Pratiques}
+
+\subsubsection{Code complet du Dockerfile Backend (Q3)}
+\begin{lstlisting}[language=docker]
+FROM eclipse-temurin:23-jdk-alpine AS builder
+WORKDIR /app
+
+COPY .mvn/ .mvn/
+COPY mvnw pom.xml ./
+
+RUN sed -i 's/\r$//' mvnw && chmod +x mvnw
+RUN ./mvnw dependency:go-offline -B
+
+COPY src/ ./src/
+RUN ./mvnw clean package -DskipTests -B
+
+FROM eclipse-temurin:23-jre-alpine
+WORKDIR /app
+
+RUN apk update && apk upgrade --no-cache
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+
+COPY --from=builder /app/target/*.jar app.jar
+
+USER appuser
+
+EXPOSE 8080
+
+ENTRYPOINT ["java", "-jar", "app.jar"]
+\end{lstlisting}
+
+\subsubsection{Fichier .dockerignore Backend}
+\begin{lstlisting}
+target/
+build/
+.idea/
+.vscode/
+*.iml
+.DS_Store
+Thumbs.db
+.git/
+.gitignore
+.gitattributes
+*.log
+*.tmp
+README.md
+*.md
+\end{lstlisting}
+
+\begin{figure}[H]
+  \centering
+  \begin{subfigure}[b]{0.48\textwidth}
+    \shot[\linewidth]{photo rapport/3/1.png}
+    \caption{Code du \texttt{Dockerfile} Backend}
+    \label{fig:dockerfile-back}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}[b]{0.48\textwidth}
+    \shot[\linewidth]{photo rapport/3/2.png}
+    \caption{Fichier \texttt{.dockerignore} Backend}
+    \label{fig:dockerignore-back}
+  \end{subfigure}
+  \caption{Configuration de construction du Backend Spring Boot}
+  \label{fig:backend-config}
+\end{figure}
+
+\subsubsection{Explication détaillée des bonnes pratiques appliquées (Q4)}
+\begin{enumerate}
+  \item \textbf{Multi-Stage Build (Construction multi-étapes) :} Séparation entre l'étape de compilation (\texttt{builder} sous JDK complet Temurin 23 avec Maven) et l'étape d'exécution finale sous JRE. Seul le binaire \texttt{app.jar} est transféré dans l'image finale, éliminant les sources et le compilateur.
+  \item \textbf{Optimisation du cache des couches (Layer Caching) :} En copiant \texttt{pom.xml} et en exécutant \texttt{dependency:go-offline} avant d'injecter \texttt{src/}, le téléchargement des dépendances Maven reste en cache tant que les dépendances ne changent pas.
+  \item \textbf{Choix d'images minimales Alpine :} L'utilisation des distributions \texttt{alpine} réduit l'empreinte disque et la surface d'exposition du conteneur.
+  \item \textbf{Utilisateur non-root (\texttt{USER appuser}) :} L'exécution sous le compte sans privilèges \texttt{appuser} limite les droits dans le conteneur en cas de compromission de l'application.
+  \item \textbf{Forme exec pour ENTRYPOINT :} \texttt{ENTRYPOINT ["java", "-jar", "app.jar"]} garantit que le processus Java reçoit directement les signaux POSIX du système (\texttt{SIGTERM}, \texttt{SIGINT}) sans être encapsulé dans un sous-shell.
+  \item \textbf{Instruction EXPOSE explicite :} Renseigne clairement le port d'écoute 8080 sans l'exposer automatiquement sur la machine hôte.
+  \item \textbf{Usage d'un fichier .dockerignore :} Évite le transfert inutile de dossiers locaux (\texttt{target/}, \texttt{.git/}) dans le contexte de build.
+\end{enumerate}
+
+% ------------------------------------------------------------------------------
+\subsection{Q5. Cycle de vie de l'image et du conteneur Backend}
+
+\subsubsection{a. Création de l'image en local (docker build)}
+\begin{lstlisting}[language=bash]
+docker build -t travelo-backend:latest .
+\end{lstlisting}
+\begin{itemize}
+  \item \texttt{build} : Construit l'image Docker à partir du Dockerfile.
+  \item \texttt{-t travelo-backend:latest} : Applique le nom et le tag de version à l'image.
+  \item \texttt{.} : Spécifie le répertoire courant comme contexte de compilation.
+\end{itemize}
+
+\begin{figure}[H]
+  \centering
+  \shot[0.85\linewidth]{photo rapport/5/1.png}
+  \caption{Construction locale de l'image Backend avec exploitation du cache des couches}
+  \label{fig:back-build}
+\end{figure}
+
+\subsubsection{b. Scan des vulnérabilités (DevSecOps) et remédiation}
+\begin{lstlisting}[language=bash]
+docker scout quickview travelo-backend:latest
+\end{lstlisting}
+\begin{itemize}
+  \item \texttt{scout quickview} : Analyse les packages du système de base et les dépendances pour lister les CVE répertoriées.
+\end{itemize}
+
+Le premier scan sur l'image initiale détecte \textbf{16 vulnérabilités critiques (16C), 79 hautes (79H), 82 moyennes (82M) et 31 faibles (31L)}.
+
+Après avoir appliqué \texttt{apk update \&\& apk upgrade --no-cache} et isolé la couche d'exécution JRE minimale, un second scan montre une nette réduction à \textbf{9 critiques (9C), 31 hautes (31H), 38 moyennes (38M) et 15 faibles (15L)}.
+
+\begin{figure}[H]
+  \centering
+  \begin{subfigure}[b]{0.48\textwidth}
+    \shot[\linewidth]{photo rapport/5/4.png}
+    \caption{Scan initial : 16C, 79H, 82M, 31L}
+    \label{fig:scout-back-before}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}[b]{0.48\textwidth}
+    \shot[\linewidth]{photo rapport/5/5.png}
+    \caption{Scan post-remédiation : 9C, 31H, 38M, 15L}
+    \label{fig:scout-back-after}
+  \end{subfigure}
+  \caption{Analyse des vulnérabilités Docker Scout sur le Backend avant et après remédiation}
+  \label{fig:scout-backend}
+\end{figure}
+
+\subsubsection{c. Publication de l'image sur Docker Hub}
+\begin{lstlisting}[language=bash]
+docker login
+docker tag travelo-backend:latest anaselmarrhoub/travelo-backend:1.0
+docker push anaselmarrhoub/travelo-backend:1.0
+\end{lstlisting}
+\begin{itemize}
+  \item \texttt{login} : Authentifie le client Docker auprès du registre central Docker Hub.
+  \item \texttt{tag} : Associe un alias complet intégrant l'espace de nommage de l'utilisateur.
+  \item \texttt{push} : Téléverse les couches vers Docker Hub.
+\end{itemize}
+
+\begin{figure}[H]
+  \centering
+  \shot[0.85\linewidth]{photo rapport/5/6.png}
+  \caption{Publication de l'image Backend sur Docker Hub sous le tag \texttt{1.0}}
+  \label{fig:back-push}
+\end{figure}
+
+\subsubsection{d. Instanciation du conteneur Backend}
+L'exécution autonome est d'abord vérifiée, puis le conteneur final est instancié sur le réseau de la base de données.
+
+\begin{lstlisting}[language=bash]
+# Verification prealable
+docker run -p 8080:8080 travelo-backend:latest
+
+# Instanciation connectee au reseau commun
+docker run -d \
+  --name travelo-backend \
+  --network travelo-net \
+  -p 8080:8080 \
+  anaselmarrhoub/travelo-backend:1.0
+\end{lstlisting}
+
+\subsubsection*{Attributs de la commande}
+\begin{itemize}
+  \item \texttt{-d} : Mode détaché en arrière-plan.
+  \item \texttt{--name travelo-backend} : Nom d'hôte résolu sur le réseau.
+  \item \texttt{--network travelo-net} : Connexion au même réseau bridge que \texttt{travelo-database}.
+  \item \texttt{-p 8080:8080} : Mappe le port 8080 de l'hôte vers le port interne de Tomcat.
+\end{itemize}
+
+\begin{figure}[H]
+  \centering
+  \shot[0.85\linewidth]{photo rapport/5/2.png}
+  \caption{Démarrage de Spring Boot 3.4 avec l'utilisateur non-root \texttt{appuser}}
+  \label{fig:spring-banner}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \begin{subfigure}[b]{0.48\textwidth}
+    \shot[\linewidth]{photo rapport/5/7.png}
+    \caption{Instanciation rattachée à \texttt{travelo-net}}
+    \label{fig:back-run}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}[b]{0.48\textwidth}
+    \shot[\linewidth]{photo rapport/5/8.png}
+    \caption{Conteneurs actifs dans \texttt{docker ps}}
+    \label{fig:back-ps}
+  \end{subfigure}
+  \caption{Instanciation et vérification de l'état du conteneur Backend}
+  \label{fig:backend-run-group}
+\end{figure}
+
+\subsubsection{e. Inspection du conteneur Backend (docker inspect)}
+\begin{lstlisting}[language=bash]
+docker inspect travelo-backend
+\end{lstlisting}
+\begin{itemize}
+  \item \texttt{inspect} : Extrait les métadonnées détaillées du conteneur en JSON (état \texttt{"Status": "running"}, adresse IP sur le réseau \texttt{travelo-net}, ports exposés et arguments).
+\end{itemize}
+
+\begin{figure}[H]
+  \centering
+  \shot[0.8\linewidth]{photo rapport/5/9.png}
+  \caption{Inspection JSON de \texttt{travelo-backend} confirmant le statut d'exécution}
+  \label{fig:back-inspect}
+\end{figure}
+
+\subsubsection{f. Consultation des logs et test applicatif}
+\begin{lstlisting}[language=bash]
+docker logs travelo-backend
+\end{lstlisting}
+\begin{itemize}
+  \item \texttt{logs} : Affiche les flux \texttt{stdout} et \texttt{stderr} émis par le conteneur.
+\end{itemize}
+
+Les logs confirment la connexion réussie du pool de connexions HikariCP à MySQL, l'exécution des requêtes DDL Hibernate (\texttt{create table flight}, \texttt{passenger}, \texttt{reservation}, \texttt{seats}) et le démarrage de l'application en \textbf{10.013 secondes}.
+
+\begin{figure}[H]
+  \centering
+  \begin{subfigure}[b]{0.31\textwidth}
+    \shot[\linewidth]{photo rapport/5/10.png}
+    \caption{Connexion HikariCP à MySQL}
+    \label{fig:log-hikari}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}[b]{0.31\textwidth}
+    \shot[\linewidth]{photo rapport/5/11.png}
+    \caption{Initialisation des tables Hibernate}
+    \label{fig:log-hibernate}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}[b]{0.31\textwidth}
+    \shot[\linewidth]{photo rapport/5/12.png}
+    \caption{Démarrage en 10.013 secondes}
+    \label{fig:log-started}
+  \end{subfigure}
+  \caption{Journaux d'exécution Spring Boot du conteneur Backend}
+  \label{fig:back-logs}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \shot[0.65\linewidth]{photo rapport/5/3.png}
+  \caption{Point d'accès HTTP Backend validé sur \texttt{http://localhost:8080}}
+  \label{fig:back-browser}
+\end{figure}
+
+% ------------------------------------------------------------------------------
+\subsection{Q6. Conteneurisation du Projet Frontend (React)}
+
+\subsubsection{6.1 (Q3 Frontend) Code du Dockerfile Frontend}
+\begin{lstlisting}[language=docker]
+FROM node:20-alpine AS build
+WORKDIR /app
+
+COPY package*.json ./
+RUN npm install
+
+COPY . .
+RUN npm run build
+
+FROM nginx:1-alpine-slim
+WORKDIR /usr/share/nginx/html
+
+RUN rm -rf ./*
+COPY --from=build /app/build .
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+
+EXPOSE 3000
+CMD ["nginx", "-g", "daemon off;"]
+\end{lstlisting}
+
+\subsubsection{Fichier .dockerignore Frontend}
+\begin{lstlisting}
+node_modules
+build
+.git
+.dockerignore
+Dockerfile
+\end{lstlisting}
+
+\subsubsection{6.2 (Q4 Frontend) Bonnes pratiques spécifiques appliquées}
+\begin{enumerate}
+  \item \textbf{Multi-stage build Node/Nginx :} La compilation React est réalisée avec Node.js 20, puis seuls les fichiers statiques générés (\texttt{/build}) sont transférés dans l'image légère Nginx de production.
+  \item \textbf{Mise en cache des dépendances Node :} L'instruction \texttt{COPY package*.json ./} placée avant l'installation des paquets permet de réutiliser le cache de \texttt{npm install}.
+  \item \textbf{Choix de \texttt{nginx:1-alpine-slim} :} Réduit la base système au strict nécessaire pour servir les assets statiques avec une faible surface d'exposition.
+  \item \textbf{Nettoyage des fichiers par défaut (\texttt{rm -rf ./*}) :} Supprime la page d'accueil par défaut de Nginx pour éviter les conflits d'index.
+  \item \textbf{Exclusion via .dockerignore :} Évite d'envoyer le dossier local \texttt{node\_modules} au démon Docker.
+\end{enumerate}
+
+\subsubsection{6.3 (Q5a Frontend) Build local de l'image}
+\begin{lstlisting}[language=bash]
+docker build -t travelo-frontend:latest .
+\end{lstlisting}
+
+\begin{figure}[H]
+  \centering
+  \shot[0.85\linewidth]{photo rapport/6/1.png}
+  \caption{Construction multi-stage de l'image Frontend React}
+  \label{fig:front-build}
+\end{figure}
+
+\subsubsection{6.4 (Q5b Frontend) Scan des vulnérabilités et remédiation}
+\begin{lstlisting}[language=bash]
+docker scout quickview travelo-frontend:latest
+\end{lstlisting}
+
+Le scan initial avec l'image \texttt{nginx:1-alpine} classique révélait \textbf{1 vulnérabilité critique (1C), 2 hautes (2H) et 5 moyennes (5M)}.
+
+Après passage à la version minimale \texttt{nginx:1-alpine-slim}, le scan de contrôle n'affiche \textbf{aucune vulnérabilité détectée par Docker Scout au moment du scan} (0C, 0H, 0M, 0L).
+
+\begin{figure}[H]
+  \centering
+  \begin{subfigure}[b]{0.48\textwidth}
+    \shot[\linewidth]{photo rapport/6/4.png}
+    \caption{Scan initial avec image standard (1C, 2H, 5M)}
+    \label{fig:scout-front-before}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}[b]{0.48\textwidth}
+    \shot[\linewidth]{photo rapport/6/5.png}
+    \caption{Scan post-remédiation avec \texttt{nginx:1-alpine-slim}}
+    \label{fig:scout-front-after}
+  \end{subfigure}
+  \caption{Résultats des scans Docker Scout sur l'image Frontend}
+  \label{fig:scout-frontend}
+\end{figure}
+
+\subsubsection{6.5 (Q5c Frontend) Publication sur Docker Hub}
+\begin{lstlisting}[language=bash]
+docker tag travelo-frontend:latest anaselmarrhoub/travelo-frontend:1.0
+docker push anaselmarrhoub/travelo-frontend:1.0
+\end{lstlisting}
+
+\begin{figure}[H]
+  \centering
+  \shot[0.85\linewidth]{photo rapport/6/6.png}
+  \caption{Publication de l'image Frontend sur Docker Hub}
+  \label{fig:front-push}
+\end{figure}
+
+\subsubsection{6.6 (Q5d Frontend) Instanciation du conteneur}
+\begin{lstlisting}[language=bash]
+docker run -d --name travelo-frontend \
+  --network travelo-net \
+  -p 3000:3000 \
+  travelo-frontend:latest
+\end{lstlisting}
+\begin{itemize}
+  \item \texttt{-d} : Exécution en arrière-plan.
+  \item \texttt{--name travelo-frontend} : Nom d'hôte résolu sur le réseau Docker.
+  \item \texttt{--network travelo-net} : Connexion au réseau partagé.
+  \item \texttt{-p 3000:3000} : Publication du port 3000 sur la machine hôte.
+\end{itemize}
+
+\begin{figure}[H]
+  \centering
+  \shot[0.85\linewidth]{photo rapport/6/2.png}
+  \caption{Lancement du conteneur Frontend sur le réseau commun}
+  \label{fig:front-run}
+\end{figure}
+
+\subsubsection{6.7 (Q5e Frontend) Inspection du conteneur}
+\begin{lstlisting}[language=bash]
+docker inspect travelo-frontend
+\end{lstlisting}
+
+\begin{figure}[H]
+  \centering
+  \shot[0.8\linewidth]{photo rapport/6/7.png}
+  \caption{Inspection JSON de \texttt{travelo-frontend} confirmant l'état actif}
+  \label{fig:front-inspect}
+\end{figure}
+
+\subsubsection{6.8 (Q5f Frontend) Logs d'exécution Nginx}
+\begin{lstlisting}[language=bash]
+docker logs -f travelo-frontend
+\end{lstlisting}
+\begin{itemize}
+  \item \texttt{-f} : Affiche les flux de logs en continu.
+\end{itemize}
+
+\begin{figure}[H]
+  \centering
+  \shot[0.85\linewidth]{photo rapport/6/8.png}
+  \caption{Journaux d'exécution Nginx validant le démarrage des processus workers}
+  \label{fig:front-logs}
+\end{figure}
+
+% ------------------------------------------------------------------------------
+\subsection{Q7. Validation du fonctionnement de l'application 3-tiers}
+L'accès au port 3000 dans le navigateur confirme la bonne communication entre les trois conteneurs (Frontend React $\rightarrow$ Backend Spring Boot $\rightarrow$ Base de données MySQL).
+
+\begin{figure}[H]
+  \centering
+  \shot[0.85\linewidth]{photo rapport/6/3.png}
+  \caption{Interface Travelo accessible et opérationnelle sur \texttt{http://localhost:3000}}
+  \label{fig:q7-browser}
+\end{figure}
+
+% ------------------------------------------------------------------------------
+\subsection{Q8. Nettoyage des conteneurs en exécution}
+\begin{lstlisting}[language=bash]
+docker rm -f travelo-frontend travelo-backend travelo-database
+\end{lstlisting}
+\begin{itemize}
+  \item \texttt{rm} : Supprime les conteneurs spécifiés.
+  \item \texttt{-f} (\textit{force}) : Interrompt les processus par un signal SIGKILL avant de supprimer les conteneurs.
+\end{itemize}
+
+\begin{figure}[H]
+  \centering
+  \shot[0.85\linewidth]{photo rapport/8/1.png}
+  \caption{Arrêt et suppression des trois conteneurs en cours d'exécution}
+  \label{fig:q8-clean}
+\end{figure}
+
+% ------------------------------------------------------------------------------
+\subsection{Q9. Orchestration locale avec Docker Compose}
+
+\subsubsection{a. Fichier docker-compose.yml}
+\begin{lstlisting}[language=yaml]
+services:
+  database:
+    container_name: travelo-database
+    image: mysql:8.0
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-chaima2003}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-travelo_db}
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - travelo-net
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-chaima2003}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    container_name: travelo-backend
+    build:
+      context: ./travelo_backend
+      dockerfile: Dockerfile
+    image: anaselmarrhoub/travelo-backend:1.0
+    restart: always
+    ports:
+      - "8080:8080"
+    depends_on:
+      database:
+        condition: service_healthy
+    networks:
+      - travelo-net
+
+  frontend:
+    container_name: travelo-frontend
+    build:
+      context: ./travelo_frontend
+      dockerfile: Dockerfile
+    image: anaselmarrhoub/travelo-frontend:1.0
+    restart: always
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    networks:
+      - travelo-net
+
+networks:
+  travelo-net:
+    driver: bridge
+
+volumes:
+  mysql_data:
+\end{lstlisting}
+
+\subsubsection{b. Commande d'exécution}
+\begin{lstlisting}[language=bash]
+docker compose up -d --build
+\end{lstlisting}
+\begin{itemize}
+  \item \texttt{up} : Analyse la configuration, crée le réseau et les volumes, puis démarre les services.
+  \item \texttt{-d} : Mode détaché en arrière-plan.
+  \item \texttt{--build} : Force la reconstruction des images locales avant le démarrage.
+\end{itemize}
+
+\begin{figure}[H]
+  \centering
+  \begin{subfigure}[b]{0.48\textwidth}
+    \shot[\linewidth]{photo rapport/9/1.png}
+    \caption{Build et assemblage des services}
+    \label{fig:compose-build}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}[b]{0.48\textwidth}
+    \shot[\linewidth]{photo rapport/9/2.png}
+    \caption{Démarrage synchronisé sur le healthcheck}
+    \label{fig:compose-healthy}
+  \end{subfigure}
+  \caption{Lancement de la stack applicative via Docker Compose}
+  \label{fig:compose-up-group}
+\end{figure}
+
+\subsubsection{c. Vérification du fonctionnement}
+\begin{lstlisting}[language=bash]
+docker compose ps
+\end{lstlisting}
+
+\begin{figure}[H]
+  \centering
+  \shot[0.85\linewidth]{photo rapport/9/4.png}
+  \caption{État des services : \texttt{database (healthy)}, \texttt{backend} et \texttt{frontend} en ligne}
+  \label{fig:compose-ps}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \shot[0.85\linewidth]{photo rapport/9/3.png}
+  \caption{Interface de l'application accessible sur \texttt{http://localhost:3000}}
+  \label{fig:compose-browser}
+\end{figure}
+
+% ------------------------------------------------------------------------------
+\subsection{Q10. Nettoyage complet de l'environnement Docker Host}
+Pour nettoyer les conteneurs et les images sur l'hôte, la commande Compose avec purge des images est exécutée :
+
+\begin{lstlisting}[language=bash]
+docker compose down --rmi all -v
+# Pour un nettoyage global des conteneurs et images non utilises
+docker rm -f $(docker ps -aq)
+docker rmi -f $(docker images -q)
+\end{lstlisting}
+\begin{itemize}
+  \item \texttt{down} : Arrête et supprime les conteneurs et le réseau de la stack.
+  \item \texttt{--rmi all} : Supprime l'ensemble des images associées aux services.
+  \item \texttt{-v} : Supprime les volumes nommés déclarés dans le fichier Compose.
+\end{itemize}
+\textit{Remarque :} Le volume persistant du futur registre privé (\texttt{registry\_data}) n'appartenant pas à cette stack Compose, ses données restent préservées.
+
+\begin{figure}[H]
+  \centering
+  \shot[0.85\linewidth]{photo rapport/10/1.png}
+  \caption{Suppression complète des conteneurs, images, volumes et réseaux associés}
+  \label{fig:q10-down}
+\end{figure}
+
+% ------------------------------------------------------------------------------
+\subsection{Q11. Mise en place d'un Registre Privé Docker avec UI}
+La gestion d'un registre d'images privé permet à NeoTech de conserver ses images en local sans dépendre du registre public. Deux services sont combinés :
+\begin{itemize}
+  \item \textbf{11.a (Stockage des images) :} Assuré par l'image officielle \texttt{registry:2}.
+  \item \textbf{11.b (Visualisation par interface graphique) :} Assuré par l'image \texttt{joxit/docker-registry-ui:latest}.
+\end{itemize}
+
+\begin{lstlisting}[language=yaml]
+services:
+  registry:
+    image: registry:2
+    container_name: docker-registry
+    restart: always
+    ports:
+      - "5000:5000"
+    environment:
+      REGISTRY_STORAGE_DELETE_ENABLED: "true"
+    volumes:
+      - registry_data:/var/lib/registry
+    networks:
+      - registry-net
+
+  registry-ui:
+    image: joxit/docker-registry-ui:latest
+    container_name: docker-registry-ui
+    restart: always
+    ports:
+      - "5001:80"
+    environment:
+      - REGISTRY_TITLE=Mon Registre Docker Prive
+      - NGINX_PROXY_PASS_URL=http://registry:5000
+      - REGISTRY_URL=http://localhost:5001
+      - SINGLE_REGISTRY=true
+      - DELETE_IMAGES=true
+    depends_on:
+      - registry
+    networks:
+      - registry-net
+
+networks:
+  registry-net:
+    driver: bridge
+
+volumes:
+  registry_data:
+\end{lstlisting}
+
+\begin{lstlisting}[language=bash]
+docker compose -f docker-compose-registry.yml up -d
+\end{lstlisting}
+\begin{itemize}
+  \item \texttt{-f} : Spécifie le fichier Compose dédié au registre privé.
+  \item \texttt{up -d} : Démarre les conteneurs en mode détaché.
+\end{itemize}
+
+\textit{Remarque technique :} L'adresse \texttt{localhost:5000} fonctionne sans configuration de certificats TLS/HTTPS car le démon Docker autorise par défaut les connexions HTTP non chiffrées vers les registres en boucle locale (\texttt{localhost} ou \texttt{127.0.0.1}).
+
+\begin{figure}[H]
+  \centering
+  \begin{subfigure}[b]{0.48\textwidth}
+    \shot[\linewidth]{photo rapport/11/1.png}
+    \caption{Déploiement du registre privé et de l'UI}
+    \label{fig:reg-up}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}[b]{0.48\textwidth}
+    \shot[\linewidth]{photo rapport/11/2.png}
+    \caption{Interface UI vierge sur \texttt{localhost:5001}}
+    \label{fig:reg-empty}
+  \end{subfigure}
+  \caption{Mise en place de l'infrastructure du registre d'images privé}
+  \label{fig:reg-setup-group}
+\end{figure}
+
+\subsubsection{Alimentation du registre privé}
+\begin{lstlisting}[language=bash]
+docker tag travelo-backend:latest localhost:5000/travelo-backend:1.0
+docker tag travelo-frontend:latest localhost:5000/travelo-frontend:1.0
+docker push localhost:5000/travelo-backend:1.0
+docker push localhost:5000/travelo-frontend:1.0
+\end{lstlisting}
+
+\begin{figure}[H]
+  \centering
+  \shot[0.85\linewidth]{photo rapport/11/3.png}
+  \caption{Catalogue du registre affichant les dépôts \texttt{travelo-backend} et \texttt{travelo-frontend}}
+  \label{fig:reg-repos}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \begin{subfigure}[b]{0.48\textwidth}
+    \shot[\linewidth]{photo rapport/11/4.png}
+    \caption{Tag 1.0 de \texttt{travelo-backend} (127~Mo)}
+    \label{fig:reg-tag-back}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}[b]{0.48\textwidth}
+    \shot[\linewidth]{photo rapport/11/5.png}
+    \caption{Tag 1.0 de \texttt{travelo-frontend} (6.3~Mo)}
+    \label{fig:reg-tag-front}
+  \end{subfigure}
+  \caption{Détails des images stockées dans le registre privé}
+  \label{fig:reg-tags-group}
+\end{figure}
+
+% ------------------------------------------------------------------------------
+\subsection{Q12. Redéploiement via Docker Compose depuis le Registre Privé}
+Le fichier \texttt{docker-compose.yml} est modifié pour que les directives \texttt{image:} pointent vers les adresses du registre local (\texttt{localhost:5000/travelo-...}).
+
+\begin{figure}[H]
+  \centering
+  \begin{subfigure}[b]{0.48\textwidth}
+    \shot[\linewidth]{photo rapport/12/1.png}
+    \caption{Image backend : \texttt{localhost:5000/travelo-backend:1.0}}
+    \label{fig:compose-reg-back}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}[b]{0.48\textwidth}
+    \shot[\linewidth]{photo rapport/12/2.png}
+    \caption{Image frontend : \texttt{localhost:5000/travelo-frontend:1.0}}
+    \label{fig:compose-reg-front}
+  \end{subfigure}
+  \caption{Mise à jour des images dans le fichier Compose}
+  \label{fig:compose-reg-images}
+\end{figure}
+
+\subsubsection{Contrôle de l'API REST du registre}
+\begin{lstlisting}[language=bash]
+curl.exe http://localhost:5000/v2/_catalog
+\end{lstlisting}
+
+\begin{figure}[H]
+  \centering
+  \shot[0.75\linewidth]{photo rapport/12/4.png}
+  \caption{Réponse JSON de l'API confirmant les dépôts hébergés}
+  \label{fig:reg-curl}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \shot[0.75\linewidth]{photo rapport/12/3.png}
+  \caption{Vérification des conteneurs du registre en statut opérationnel}
+  \label{fig:reg-status}
+\end{figure}
+
+\subsubsection{Suppression des images de build et redéploiement}
+Pour valider que les images proviennent du registre privé et non du cache local, les tags de travail sont supprimés avant de relancer les services.
+
+\begin{lstlisting}[language=bash]
+docker rmi travelo-backend:latest travelo-frontend:latest
+docker compose up -d
+docker compose ps
+\end{lstlisting}
+
+\begin{figure}[H]
+  \centering
+  \begin{subfigure}[b]{0.48\textwidth}
+    \shot[\linewidth]{photo rapport/12/5.png}
+    \caption{Détaggage des images de travail}
+    \label{fig:rmi-local}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}[b]{0.48\textwidth}
+    \shot[\linewidth]{photo rapport/12/6.png}
+    \caption{Pull et démarrage depuis le registre}
+    \label{fig:pull-registry}
+  \end{subfigure}
+  \caption{Démarrage de la stack depuis le registre privé}
+  \label{fig:reg-pull-group}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \shot[0.85\linewidth]{photo rapport/12/7.png}
+  \caption{Vue \texttt{docker compose ps} : services applicatifs et registre actifs}
+  \label{fig:compose-reg-ps}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \begin{subfigure}[b]{0.48\textwidth}
+    \shot[\linewidth]{photo rapport/12/8.png}
+    \caption{Interface de l'application sur le port 3000}
+    \label{fig:browser-reg}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}[b]{0.48\textwidth}
+    \shot[\linewidth]{photo rapport/12/9.png}
+    \caption{État du registre dans l'interface UI}
+    \label{fig:ui-reg-final}
+  \end{subfigure}
+  \caption{Validation fonctionnelle du redéploiement depuis le registre privé}
+  \label{fig:final-reg-validation}
+\end{figure}
+
+% ==============================================================================
+% SECTION 3 : VOLET 2 - ORCHESTRATION AVEC DOCKER SWARM
+% ==============================================================================
+\section{Volet 2 : Orchestration des Conteneurs avec Docker Swarm}
+
+\subsection{Initialisation du Cluster Swarm}
+Pour passer d'un hôte unique à un orchestrateur de conteneurs, le cluster Swarm est initialisé :
+
+\begin{lstlisting}[language=bash]
+docker swarm init
+\end{lstlisting}
+\begin{itemize}
+  \item \texttt{swarm init} : Active le composant SwarmKit, configure la machine en nœud Manager, initialise la gestion d'état Raft et génère le token d'adhésion pour les nœuds Workers.
+\end{itemize}
+
+\begin{figure}[H]
+  \centering
+  \shot[0.85\linewidth]{photo rapport/13/1.png}
+  \caption{Initialisation du mode Swarm et affichage de la commande d'adhésion}
+  \label{fig:swarm-init}
+\end{figure}
+
+% ------------------------------------------------------------------------------
+\subsection{Q13, Q14, Q15 \& Q16. Fichier docker-compose.yml pour Docker Swarm}
+
+\subsubsection{Fichier complet pour le déploiement de la Stack}
+Dans Docker Swarm, les fichiers de configuration externe comme \texttt{nginx.conf} sont injectés à l'aide de la directive \texttt{configs}. Cette approche permet de gérer et de versionner la configuration au niveau du cluster sans avoir à reconstruire l'image du Reverse Proxy.
+
+\begin{lstlisting}[language=yaml]
+version: '3.8'
+
+services:
+  # ------------------------------------------------
+  # Reverse Proxy Nginx (Point d'entree Swarm)
+  # ------------------------------------------------
+  proxy:
+    image: nginx:alpine
+    ports:
+      - target: 80
+        published: 80
+        mode: ingress
+      - target: 3306
+        published: 3308
+        mode: ingress
+    configs:
+      - source: nginx_config
+        target: /etc/nginx/nginx.conf
+    networks:
+      - travelo-net
+    deploy:
+      mode: replicated
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+
+  # ------------------------------------------------
+  # Service 1 : Base de donnees MySQL
+  # ------------------------------------------------
+  database:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: travelo_db
+    volumes:
+      - db-data:/var/lib/mysql
+    networks:
+      - travelo-net
+    deploy:
+      mode: replicated
+      replicas: 2
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 512M
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+        window: 120s
+      placement:
+        constraints:
+          - node.role == manager
+
+  # ------------------------------------------------
+  # Service 2 : Backend Spring Boot
+  # ------------------------------------------------
+  backend:
+    image: localhost:5000/travelo-backend:1.0
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://database:3306/travelo_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: root
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+    networks:
+      - travelo-net
+    deploy:
+      mode: replicated
+      replicas: 2
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 512M
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+        window: 120s
+
+  # ------------------------------------------------
+  # Service 3 : Frontend React
+  # ------------------------------------------------
+  frontend:
+    image: localhost:5000/travelo-frontend:1.0
+    networks:
+      - travelo-net
+    deploy:
+      mode: replicated
+      replicas: 2
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 128M
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+        window: 120s
+
+configs:
+  nginx_config:
+    file: ./nginx.conf
+
+networks:
+  travelo-net:
+    driver: overlay
+    attachable: true
+
+volumes:
+  db-data:
+\end{lstlisting}
+
+\subsubsection{Justifications techniques des choix d'orchestration}
+\begin{enumerate}
+  \item \textbf{Q13 (Services \& Réseau Overlay) :} Le pilote de réseau \texttt{overlay} permet d'étendre la communication entre conteneurs à travers plusieurs hôtes physiques via une encapsulation VXLAN. Il rend les services joignables par leur nom indépendamment du nœud sur lequel ils tournent.
+  \item \textbf{Q14 (Haute Disponibilité \& Réplication) :} \texttt{replicas: 2} déploie deux instances pour chaque service. Swarm attribue à chaque service une adresse IP virtuelle (\textbf{Virtual IP -- VIP}) et équilibre automatiquement la charge entrante via le \textit{Routing Mesh} et IPVS.
+  \item \textbf{Q15 (Limitation des ressources) :} La section \texttt{deploy.resources.limits} restreint la consommation de chaque conteneur (\texttt{0.50} CPU et \texttt{512M} de mémoire pour le backend et la base ; \texttt{0.25} CPU et \texttt{128M} pour le frontend). Cela évite le phénomène de saturation des ressources (\textit{noisy neighbor}).
+  \item \textbf{Q16 (Politique de redémarrage) :} \texttt{condition: on-failure} permet à l'orchestrateur de redémarrer automatiquement une tâche en cas d'arrêt anormal, avec un intervalle de 5 secondes et un maximum de 3 tentatives sur une fenêtre de 120 secondes.
+  \item \textbf{Routage du Frontend vers le Backend :} Le conteneur backend ne publiant aucun port direct vers l'extérieur, les requêtes du navigateur vers l'API sont envoyées sur l'URL relative \texttt{/api/}, puis acheminées de manière transparente par le Reverse Proxy vers le réseau interne Swarm.
+\end{enumerate}
+
+\begin{notebox}
+\textbf{Analyse technique de la contrainte MySQL avec 2 réplicas :}\\
+La question 14 de l'énoncé exige de spécifier \texttt{replicas: 2} pour tous les services, y compris la base de données. Cependant, MySQL utilise un stockage à état (\textit{stateful}) avec le moteur transactionnel InnoDB. Deux conteneurs MySQL concurrents ne peuvent pas écrire simultanément dans le même répertoire de données sans mécanisme de synchronisation (comme la réplication MySQL primaire/secondaire ou MySQL InnoDB Cluster). 
+
+Dans la capture de contrôle de l'état des tâches (\figurename~\ref{fig:swarm-ps-errors}), on observe que la deuxième tâche de la base de données échoue avec le message \texttt{"task: non-zero exit (1)"}. Pour un environnement de production multi-nœuds, la base doit soit être maintenue à 1 réplica avec contrainte de placement, soit reposer sur un service de base de données managé ou répliqué au niveau applicatif.
+\end{notebox}
+
+\subsubsection{Commandes de déploiement de la stack Swarm}
+\begin{lstlisting}[language=bash]
+docker stack deploy -c docker-compose-swarm.yml travelo_stack
+docker stack services travelo_stack
+docker stack ps travelo_stack
+\end{lstlisting}
+\begin{itemize}
+  \item \texttt{stack deploy} : Déploie ou met à jour la stack déclarative sur le cluster Swarm.
+  \item \texttt{-c} : Indique le fichier de configuration Compose compatible Swarm.
+  \item \texttt{stack services} : Liste les services de la stack avec le nombre de réplicas en ligne.
+  \item \texttt{stack ps} : Affiche l'état d'exécution et le nœud d'affectation de chaque tâche.
+\end{itemize}
+
+\begin{figure}[H]
+  \centering
+  \shot[0.85\linewidth]{photo rapport/13/2.png}
+  \caption{Déploiement initial de la stack : création du réseau overlay et des services}
+  \label{fig:stack-deploy}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \begin{subfigure}[b]{0.48\textwidth}
+    \shot[\linewidth]{photo rapport/13/3.png}
+    \caption{Services initiaux créés}
+    \label{fig:stack-services-init}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}[b]{0.48\textwidth}
+    \shot[\linewidth]{photo rapport/13/4.png}
+    \caption{Distribution des tâches Swarm}
+    \label{fig:stack-ps-init}
+  \end{subfigure}
+  \caption{État initial de la stack Swarm avant ajustement des réplicas}
+  \label{fig:swarm-init-group}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \begin{subfigure}[b]{0.48\textwidth}
+    \shot[\linewidth]{photo rapport/14/1.png}
+    \caption{Mise à jour déclarative des services}
+    \label{fig:stack-deploy-update}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}[b]{0.48\textwidth}
+    \shot[\linewidth]{photo rapport/14/2.png}
+    \caption{Affichage de \texttt{docker stack services} avec 2 réplicas demandés}
+    \label{fig:stack-services-replicas}
+  \end{subfigure}
+  \caption{Configuration des 2 réplicas pour chaque service}
+  \label{fig:replicas-group}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \begin{subfigure}[b]{0.48\textwidth}
+    \shot[0.9\linewidth]{photo rapport/15/1.png}
+    \caption{Limites de ressources CPU et mémoire (Q15)}
+    \label{fig:q15-limits}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}[b]{0.48\textwidth}
+    \shot[0.9\linewidth]{photo rapport/16/1.png}
+    \caption{Configuration de la \texttt{restart\_policy} (Q16)}
+    \label{fig:q16-restart}
+  \end{subfigure}
+  \caption{Directives de déploiement Swarm pour les ressources et la tolérance aux pannes}
+  \label{fig:swarm-directives}
+\end{figure}
+
+% ------------------------------------------------------------------------------
+\subsection{Q17. Configuration du Reverse Proxy (Nginx / Traefik)}
+Le Reverse Proxy agit comme point d'entrée unique (\textit{Single Entry Point}). Il reçoit le trafic externe et l'achemine en interne vers les services appropriés de la stack.
+
+Pour répondre à l'énoncé qui mentionne l'accès au frontend, au backend et à la base de données :
+\begin{itemize}
+  \item Les requêtes HTTP sur \texttt{/} sont transmises au pool \texttt{frontend\_servers}.
+  \item Les requêtes HTTP sur \texttt{/api/} sont redirigées vers le pool \texttt{backend\_servers}.
+  \item Pour la base de données, un bloc TCP \texttt{stream} dans Nginx permet d'acheminer le trafic SQL (port 3306) via le proxy sans exposition directe du conteneur de données.
+\end{itemize}
+
+\begin{lstlisting}
+events {}
+
+http {
+    upstream backend_servers {
+        server backend:8080;
+    }
+    upstream frontend_servers {
+        server frontend:3000;
+    }
+
+    server {
+        listen 80;
+
+        location /api/ {
+            proxy_pass http://backend_servers/api/;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+        }
+
+        location / {
+            proxy_pass http://frontend_servers;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+        }
+    }
+}
+
+# Routage TCP pour l'acces a la base de donnees via le proxy
+stream {
+    upstream db_servers {
+        server database:3306;
+    }
+    server {
+        listen 3306;
+        proxy_pass db_servers;
+    }
+}
+\end{lstlisting}
+
+\begin{figure}[H]
+  \centering
+  \begin{subfigure}[b]{0.48\textwidth}
+    \shot[\linewidth]{photo rapport/17/1.png}
+    \caption{Configuration des upstreams dans \texttt{nginx.conf}}
+    \label{fig:nginx-conf}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}[b]{0.48\textwidth}
+    \shot[\linewidth]{photo rapport/17/2.png}
+    \caption{Service proxy Nginx déclaré dans la stack}
+    \label{fig:nginx-service}
+  \end{subfigure}
+  \caption{Mise en œuvre du Reverse Proxy Nginx dans le cluster Swarm}
+  \label{fig:proxy-nginx-group}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \shot[0.8\linewidth]{photo rapport/17/3.png}
+  \caption{Alternative étudiée : Déclaration de labels Traefik}
+  \label{fig:traefik-labels}
+\end{figure}
+
+\begin{notebox}
+\textbf{Note technique : Pourquoi Traefik n'a pas été retenu}\\
+Lors des essais initiaux, une configuration avec Traefik a été testée via des étiquettes (\textit{labels}, voir \figurename~\ref{fig:traefik-labels}). Cette option n'a pas abouti pour les raisons suivantes :
+\begin{enumerate}
+  \item En mode Swarm, Traefik requiert une configuration spécifique (\texttt{--providers.docker.swarmMode=true}) et le placement de ses labels sous le bloc \texttt{deploy.labels} des services, ainsi qu'un accès au socket Docker sur un nœud manager.
+  \item Sans configuration complète du provider Swarm, Traefik ne détectait pas automatiquement les services de la stack sur le réseau overlay.
+  \item L'utilisation de Nginx avec un fichier de configuration dédié (\texttt{nginx.conf}) injecté via les \texttt{configs} Docker s'est avérée plus directe et robuste pour la résolution DNS native des services.
+\end{enumerate}
+\end{notebox}
+
+% ------------------------------------------------------------------------------
+\subsection{Q18. Validation finale du Cluster Swarm dans le navigateur}
+Le fonctionnement de l'ensemble de la stack est validé en interrogeant le point d'entrée Nginx sur le port 80.
+
+\begin{figure}[H]
+  \centering
+  \shot[0.85\linewidth]{photo rapport/18/1.png}
+  \caption{Liste des services Swarm avec le reverse proxy actif sur le port 80}
+  \label{fig:swarm-services-final}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \shot[0.85\linewidth]{photo rapport/18/2.png}
+  \caption{Inspection des tâches Swarm montrant les réplicas actifs et la gestion des échecs}
+  \label{fig:swarm-ps-errors}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \begin{subfigure}[b]{0.48\textwidth}
+    \shot[\linewidth]{photo rapport/18/3.png}
+    \caption{Accès Frontend sur \texttt{http://localhost}}
+    \label{fig:swarm-browser-front}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}[b]{0.48\textwidth}
+    \shot[\linewidth]{photo rapport/18/4.png}
+    \caption{Routage API sur \texttt{/api/flights/search?...}}
+    \label{fig:swarm-browser-api}
+  \end{subfigure}
+  \caption{Validation du bon acheminement des flux par le Reverse Proxy}
+  \label{fig:swarm-browser-group}
+\end{figure}
+
+% ==============================================================================
+% SECTION 4 : DIFFICULTES RENCONTREES ET LIMITES
+% ==============================================================================
+\section{Difficultés Rencontrées et Limites Techniques}
+Ce projet a mis en évidence plusieurs contraintes techniques réelles lors du déploiement :
+\begin{itemize}
+  \item \textbf{Caractères de fin de ligne CRLF sous Windows :} Lors de l'exécution du wrapper Maven (\texttt{mvnw}) dans le conteneur Linux, les sauts de ligne Windows généraient une erreur d'interpréteur. L'ajout de \texttt{sed -i 's/\textbackslash r\$//' mvnw} a résolu cette anomalie.
+  \item \textbf{Vulnérabilités de la base Java 23 :} L'utilisation d'une version non-LTS (Java 23) a remonté plusieurs CVEs système. L'application des mises à jour Alpine a permis de réduire les vulnérabilités, mais un passage vers une image LTS (Java 21 ou 25) serait préférable en environnement de production.
+  \item \textbf{Concurrence d'accès MySQL en réplication :} Le paramétrage de \texttt{replicas: 2} sur un même volume persistant sans cluster MySQL applicatif provoque des conflits de verrous InnoDB. La base de données nécessite une architecture dédiée (cluster ou réplication asynchrone).
+  \item \textbf{Gestion des identifiants :} Les mots de passe sont actuellement transmis via des variables d'environnement. Dans un cluster d'entreprise, ils devraient être encapsulés dans des \textbf{Docker Secrets}.
+  \item \textbf{Registre local en cluster :} Le registre privé \texttt{localhost:5000} est adapté à un nœud unique de test. Dans un cluster distribué multi-nœuds, il nécessite un domaine résoluble et un certificat TLS.
+\end{itemize}
+
+% ==============================================================================
+% SECTION 5 : CONCLUSION
+% ==============================================================================
+\section{Conclusion}
+Ce PoC de conteneurisation mené pour l'entreprise \textbf{NeoTech} répond aux problématiques initiales de non-portabilité et d'instabilité des environnements :
+\begin{itemize}
+  \item \textbf{Portabilité logicielle :} Les conteneurs garantissent un comportement identique entre les postes de développement et la production.
+  \item \textbf{Sécurité et optimisation des images :} L'utilisation de builds multi-étapes et d'images de base minimales a réduit fortement les vulnérabilités ; le frontend ne présente aucune vulnérabilité détectée par Docker Scout au moment de l'audit.
+  \item \textbf{Gestion locale des artefacts :} Le registre privé local avec interface UI permet de stocker et visualiser les images en interne.
+  \item \textbf{Orchestration Swarm et résilience :} Docker Swarm gère la réplication, la limitation des ressources et l'auto-guérison des services applicatifs, tandis que le Reverse Proxy centralise les accès sur le port standard HTTP.
+\end{itemize}
+
+\end{document}
